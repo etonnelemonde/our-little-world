@@ -227,6 +227,259 @@
       .modal{padding:20px}
       .letter{padding:20px;font-size:13px}
     }
+/* =========================
+   PIN LIST
+========================= */
+
+.pin-list-modal {
+  position: relative;
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(820px, calc(100vh - 40px));
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(247, 236, 213, 0.94), rgba(247, 236, 213, 0.94)),
+    #f7ecd5;
+  border: 1px solid rgba(75, 56, 39, 0.35);
+  box-shadow:
+    0 20px 60px rgba(55, 38, 20, 0.35),
+    inset 0 0 40px rgba(111, 79, 42, 0.08);
+  color: #4b3827;
+  padding: 34px;
+  overflow-y: auto;
+}
+
+.pin-list-header {
+  text-align: center;
+  padding: 8px 30px 24px;
+}
+
+.pin-list-header .eyebrow {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  opacity: 0.65;
+  margin-bottom: 7px;
+}
+
+.pin-list-header h2 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 38px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.pin-list-header p {
+  margin: 7px 0 0;
+  font-family: "Gowun Batang", serif;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.pin-filter {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.pin-filter-btn {
+  border: 1px solid rgba(75, 56, 39, 0.28);
+  background: rgba(255,255,255,0.25);
+  color: #4b3827;
+  padding: 7px 13px;
+  border-radius: 20px;
+  font-family: "Gowun Batang", serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pin-filter-btn.active {
+  background: #4b3827;
+  color: #f7ecd5;
+}
+
+.filter-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: 0;
+}
+
+.filter-dot.red {
+  background: #a83c32;
+}
+
+.filter-dot.white {
+  background: #fffaf0;
+  border: 1px solid #8d765d;
+}
+
+.pin-list-count {
+  text-align: right;
+  font-family: "Gowun Batang", serif;
+  font-size: 11px;
+  opacity: 0.6;
+  margin: 0 2px 8px;
+}
+
+.pin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pin-list-item {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  gap: 15px;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 249, 232, 0.58);
+  border: 1px solid rgba(75, 56, 39, 0.18);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.pin-list-item:hover {
+  background: rgba(255, 249, 232, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(75, 56, 39, 0.08);
+}
+
+.pin-list-photo {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  display: block;
+  background: #dfcba7;
+}
+
+.pin-list-photo-empty {
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(218, 199, 163, 0.55);
+  font-size: 25px;
+  opacity: 0.55;
+}
+
+.pin-list-info {
+  min-width: 0;
+}
+
+.pin-list-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Gowun Batang", serif;
+  font-size: 10px;
+  opacity: 0.65;
+  margin-bottom: 3px;
+}
+
+.pin-list-type-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.pin-list-type-dot.visited {
+  background: #a83c32;
+}
+
+.pin-list-type-dot.wishlist {
+  background: #fffaf0;
+  border: 1px solid #806b52;
+}
+
+.pin-list-name {
+  font-family: "Cormorant Garamond", "Gowun Batang", serif;
+  font-size: 23px;
+  line-height: 1.15;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+
+.pin-list-comments {
+  font-family: "Gowun Batang", serif;
+  font-size: 11px;
+  line-height: 1.55;
+  opacity: 0.8;
+}
+
+.pin-list-comment {
+  margin-top: 2px;
+}
+
+.pin-list-comment strong {
+  font-weight: 600;
+}
+
+.pin-list-go {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0.65;
+}
+
+.pin-list-empty {
+  text-align: center;
+  padding: 55px 20px;
+  font-family: "Gowun Batang", serif;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.pin-list-loading {
+  text-align: center;
+  padding: 40px;
+  font-family: "Gowun Batang", serif;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+
+  .pin-list-modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    padding: 22px 14px;
+  }
+
+  .pin-list-header {
+    padding: 8px 10px 20px;
+  }
+
+  .pin-list-header h2 {
+    font-size: 31px;
+  }
+
+  .pin-list-item {
+    grid-template-columns: 65px 1fr;
+    gap: 11px;
+  }
+
+  .pin-list-photo,
+  .pin-list-photo-empty {
+    width: 65px;
+    height: 65px;
+  }
+
+  .pin-list-name {
+    font-size: 19px;
+  }
+
+  .pin-list-go {
+    display: none;
+  }
+}
   </style>
 </head>
 
@@ -243,6 +496,7 @@
     <div class="actions">
       <button class="action-btn" id="letterBtn">💌 편지 읽기</button>
       <button class="action-btn" id="addPinBtn">📌 핀 추가하기</button>
+      <button class="map-button" id="openPinListBtn">📍 핀 모아보기</button>
       <button class="action-btn" id="logoutBtn" style="display:none">나가기</button>
     </div>
   </div>
@@ -349,7 +603,46 @@ p.s. 그래도 생일인데 뭔가 재미있는 게 없을까 생각하다가 �
     </div>
   </div>
 
-  <script>
+  <!-- PIN LIST MODAL -->
+<div class="modal-backdrop" id="pinListModal">
+  <div class="pin-list-modal">
+    
+    <button class="close" id="closePinListBtn">×</button>
+
+    <div class="pin-list-header">
+      <div class="eyebrow">OUR LITTLE WORLD</div>
+      <h2>핀 모아보기</h2>
+      <p>우리가 지나온 곳, 그리고 함께 가고 싶은 곳</p>
+    </div>
+
+    <div class="pin-filter">
+      <button class="pin-filter-btn active" data-filter="all">
+        전체
+      </button>
+
+      <button class="pin-filter-btn" data-filter="visited">
+        <span class="filter-dot red"></span>
+        다녀온 곳
+      </button>
+
+      <button class="pin-filter-btn" data-filter="wishlist">
+        <span class="filter-dot white"></span>
+        가고 싶은 곳
+      </button>
+    </div>
+
+    <div class="pin-list-count" id="pinListCount"></div>
+
+    <div class="pin-list" id="pinList">
+      <div class="pin-list-loading">
+        지도를 펼쳐보는 중...
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
     /* =========================================================
        1) 여기 두 값만 본인의 Supabase 값으로 바꾸세요.
        Supabase Dashboard → Project Settings → API에서 확인합니다.
@@ -367,7 +660,262 @@ p.s. 그래도 생일인데 뭔가 재미있는 게 없을까 생각하다가 �
 
     const supabaseClient =
       window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* =========================
+   PIN LIST
+========================= */
 
+const pinListModal = document.getElementById("pinListModal");
+const openPinListBtn = document.getElementById("openPinListBtn");
+const closePinListBtn = document.getElementById("closePinListBtn");
+const pinList = document.getElementById("pinList");
+const pinListCount = document.getElementById("pinListCount");
+
+let allPinListData = [];
+let currentPinFilter = "all";
+
+
+function escapePinListHTML(value) {
+  if (value === null || value === undefined) return "";
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+async function loadPinList() {
+
+  pinList.innerHTML = `
+    <div class="pin-list-loading">
+      지도를 펼쳐보는 중...
+    </div>
+  `;
+
+  const { data, error } = await supabaseClient
+    .from("pins")
+    .select(`
+      id,
+      type,
+      name,
+      lat,
+      lon,
+      image_path,
+      seokyung_comment,
+      moonhyuk_comment
+    `)
+    .order("id", { ascending: true });
+
+  if (error) {
+    console.error("핀 목록 불러오기 실패:", error);
+
+    pinList.innerHTML = `
+      <div class="pin-list-empty">
+        핀 목록을 불러오지 못했어요.<br>
+        잠시 후 다시 시도해주세요.
+      </div>
+    `;
+
+    return;
+  }
+
+  allPinListData = data || [];
+
+  renderPinList();
+}
+
+
+function renderPinList() {
+
+  let filteredPins = [...allPinListData];
+
+  if (currentPinFilter === "visited") {
+    filteredPins = filteredPins.filter(pin => pin.type === "visited");
+  }
+
+  if (currentPinFilter === "wishlist") {
+    filteredPins = filteredPins.filter(pin => pin.type === "wishlist");
+  }
+
+  pinListCount.textContent =
+    `${filteredPins.length}개의 장소`;
+
+  if (!filteredPins.length) {
+    pinList.innerHTML = `
+      <div class="pin-list-empty">
+        아직 이곳에 남겨진 핀이 없어요.
+      </div>
+    `;
+    return;
+  }
+
+  pinList.innerHTML = filteredPins.map(pin => {
+
+    const isVisited = pin.type === "visited";
+
+    const typeLabel = isVisited
+      ? "함께 다녀온 곳"
+      : "함께 가고 싶은 곳";
+
+    let photoHTML = `
+      <div class="pin-list-photo-empty">📍</div>
+    `;
+
+    if (pin.image_path) {
+
+      const { data: publicUrlData } =
+        supabaseClient.storage
+          .from(BUCKET)
+          .getPublicUrl(pin.image_path);
+
+      if (publicUrlData?.publicUrl) {
+        photoHTML = `
+          <img
+            class="pin-list-photo"
+            src="${publicUrlData.publicUrl}"
+            alt=""
+            loading="lazy"
+          >
+        `;
+      }
+    }
+
+    const comments = [];
+
+    if (pin.seokyung_comment) {
+      comments.push(`
+        <div class="pin-list-comment">
+          <strong>서경</strong> ·
+          ${escapePinListHTML(pin.seokyung_comment)}
+        </div>
+      `);
+    }
+
+    if (pin.moonhyuk_comment) {
+      comments.push(`
+        <div class="pin-list-comment">
+          <strong>문혁</strong> ·
+          ${escapePinListHTML(pin.moonhyuk_comment)}
+        </div>
+      `);
+    }
+
+    const commentHTML = comments.length
+      ? comments.join("")
+      : `<div class="pin-list-comment">아직 남겨진 이야기가 없어요.</div>`;
+
+    return `
+      <div
+        class="pin-list-item"
+        data-pin-id="${pin.id}"
+        data-lat="${pin.lat}"
+        data-lon="${pin.lon}"
+      >
+
+        ${photoHTML}
+
+        <div class="pin-list-info">
+
+          <div class="pin-list-type">
+            <span class="pin-list-type-dot ${isVisited ? "visited" : "wishlist"}"></span>
+            ${typeLabel}
+          </div>
+
+          <div class="pin-list-name">
+            ${escapePinListHTML(pin.name)}
+          </div>
+
+          <div class="pin-list-comments">
+            ${commentHTML}
+          </div>
+
+        </div>
+
+        <div class="pin-list-go">
+          지도에서 보기 →
+        </div>
+
+      </div>
+    `;
+
+  }).join("");
+
+
+  /* 목록 클릭 → 해당 위치로 지도 이동 */
+
+  document.querySelectorAll(".pin-list-item").forEach(item => {
+
+    item.addEventListener("click", () => {
+
+      const lat = Number(item.dataset.lat);
+      const lon = Number(item.dataset.lon);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return;
+      }
+
+      pinListModal.classList.remove("open");
+
+      map.setView([lat, lon], Math.max(map.getZoom(), 5), {
+        animate: true
+      });
+
+    });
+
+  });
+}
+
+
+/* 열기 */
+
+openPinListBtn.addEventListener("click", async () => {
+
+  pinListModal.classList.add("open");
+
+  await loadPinList();
+
+});
+
+
+/* 닫기 */
+
+closePinListBtn.addEventListener("click", () => {
+  pinListModal.classList.remove("open");
+});
+
+
+/* 바깥쪽 클릭 */
+
+pinListModal.addEventListener("click", (event) => {
+
+  if (event.target === pinListModal) {
+    pinListModal.classList.remove("open");
+  }
+
+});
+
+
+/* 필터 */
+
+document.querySelectorAll(".pin-filter-btn").forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    document
+      .querySelectorAll(".pin-filter-btn")
+      .forEach(btn => btn.classList.remove("active"));
+
+    button.classList.add("active");
+
+    currentPinFilter = button.dataset.filter;
+
+    renderPinList();
+
+  });
+
+});
     let currentUser = null;
     let selectedType = "visited";
     let selectedPlace = null;
@@ -896,10 +1444,13 @@ p.s. 그래도 생일인데 뭔가 재미있는 게 없을까 생각하다가 �
         zoomControl: true
       }).setView([35, 25], 3);
 
-      // GitHub Pages / local preview에서 OSM 기본 타일이 403으로 막히는 문제를 피하기 위해 CARTO 사용
-L.tileLayer("https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}{r}.png", {
-  maxZoom: 20,
-  attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+      // OpenStreetMap Deutschland 타일 사용
+L.tileLayer("https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenStreetMap contributors",
+  subdomains: ["a", "b", "c"],
+  maxZoom: 18,
+  updateWhenIdle: true,
+  keepBuffer: 1
 }).addTo(map);
     }
 
