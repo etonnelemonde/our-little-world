@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Little World — 서경 & 문혁</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIINfQ3o7G4p4n1K9d8e2r4y4r5f5m5l5m5="
+        crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --paper:#ead8b4;
+      --paper-light:#f7ecd5;
+      --paper-deep:#d9c294;
+      --ink:#4b3827;
+      --muted:#79634b;
+      --red:#a83c32;
+      --line:rgba(75,56,39,.38);
+      --shadow:0 12px 30px rgba(54,38,21,.22);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden}
+    body{
+      font-family:"Gowun Batang",serif;
+      color:var(--ink);
+      background:#d8c39b;
+    }
+    #map{position:fixed;inset:0;z-index:1;background:#d9c8a6}
+    .leaflet-tile-pane{
+      filter:sepia(.42) saturate(.72) contrast(.93) brightness(1.05);
+    }
+    .map-vignette{
+      position:fixed;inset:0;z-index:2;pointer-events:none;
+      background:
+        radial-gradient(ellipse at center,transparent 48%,rgba(70,48,25,.18) 100%),
+        linear-gradient(rgba(255,247,225,.05),rgba(90,63,30,.06));
+    }
+    .topbar{
+      position:fixed;top:20px;left:28px;right:28px;z-index:10;
+      display:flex;align-items:flex-start;justify-content:space-between;
+      pointer-events:none;
+    }
+    .brand{
+      pointer-events:auto;
+      text-shadow:0 1px 0 rgba(255,255,255,.35);
+    }
+    .eyebrow{
+      font:600 13px/1.1 "Cormorant Garamond",serif;
+      letter-spacing:.23em;text-transform:uppercase;
+      color:#765d40;margin-bottom:2px;
+    }
+    .brand h1{
+      margin:0;font:600 clamp(42px,5.3vw,76px)/.88 "Cormorant Garamond",serif;
+      letter-spacing:-.03em;color:#493321;
+    }
+    .subtitle{margin:8px 0 0;font-size:16px;letter-spacing:.16em}
+    .actions{display:flex;gap:10px;pointer-events:auto}
+    button{
+      font:inherit;color:var(--ink);cursor:pointer;
+      border:1px solid rgba(75,56,39,.4);
+      background:rgba(249,237,211,.88);
+      box-shadow:0 4px 12px rgba(58,39,21,.16);
+    }
+    .action-btn{
+      min-width:126px;padding:12px 16px;font-size:14px;
+      backdrop-filter:blur(3px);
+    }
+    .action-btn:hover{background:#fff2d7}
+    .legend{
+      position:fixed;left:30px;bottom:24px;z-index:10;
+      background:rgba(249,237,211,.9);
+      border:1px solid var(--line);padding:13px 16px;
+      box-shadow:var(--shadow);font-size:13px;
+    }
+    .legend-row{display:flex;align-items:center;gap:9px;margin:4px 0}
+    .dot{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid var(--ink)}
+    .dot.red{background:var(--red);border-color:#7f2c25}
+    .dot.white{background:#fffdf5}
+    .status{
+      position:fixed;right:28px;bottom:20px;z-index:10;
+      padding:7px 11px;background:rgba(249,237,211,.72);
+      font-size:11px;letter-spacing:.04em;opacity:.8
+    }
+    .leaflet-control-zoom{
+      border:1px solid var(--line)!important;box-shadow:var(--shadow)!important;
+    }
+    .leaflet-control-zoom a{
+      color:var(--ink)!important;background:rgba(249,237,211,.9)!important;
+    }
+    .pin-icon{
+      width:24px;height:24px;border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);border:2px solid #6b4b36;
+      box-shadow:0 2px 5px rgba(0,0,0,.25);
+    }
+    .pin-icon span{
+      display:block;width:10px;height:10px;border-radius:50%;
+      position:absolute;left:5px;top:5px;border:1px solid rgba(0,0,0,.15);
+    }
+    .pin-red{background:var(--red)}
+    .pin-red span{background:#d96a5d}
+    .pin-white{background:#fffdf5}
+    .pin-white span{background:#fff}
+    .leaflet-popup-content-wrapper,.leaflet-popup-tip{
+      background:#f7ecd5;color:var(--ink);
+      border:1px solid rgba(75,56,39,.28);
+    }
+    .leaflet-popup-content{margin:12px;min-width:240px;max-width:320px}
+    .popup-title{
+      font:600 22px/1.1 "Cormorant Garamond",serif;margin-bottom:9px
+    }
+    .popup-type{font-size:11px;letter-spacing:.08em;color:#8a2f28;margin-bottom:9px}
+    .popup-photo{
+      width:100%;max-height:190px;object-fit:cover;
+      display:block;border:1px solid rgba(75,56,39,.25);margin:8px 0 12px;
+    }
+    .comment{
+      border-top:1px solid rgba(75,56,39,.2);padding:9px 0 2px;
+      font-size:13px;line-height:1.55;
+    }
+    .comment-name{font-weight:700;font-size:11px;letter-spacing:.06em;margin-bottom:3px}
+    .popup-actions{display:flex;gap:6px;margin-top:10px}
+    .mini-btn{padding:6px 9px;font-size:11px}
+    .empty-comment{opacity:.58;font-size:12px}
+    .modal-backdrop{
+      display:none;position:fixed;inset:0;z-index:100;
+      background:rgba(49,34,20,.48);align-items:center;justify-content:center;
+      padding:20px;
+    }
+    .modal-backdrop.open{display:flex}
+    .modal{
+      width:min(720px,100%);max-height:90vh;overflow:auto;
+      background:var(--paper-light);border:1px solid var(--line);
+      box-shadow:0 24px 70px rgba(0,0,0,.3);padding:28px;
+      position:relative;
+    }
+    .modal.small{width:min(430px,100%)}
+    .close{
+      position:absolute;right:12px;top:10px;background:transparent;border:0;
+      box-shadow:none;font-size:25px;padding:3px 8px;
+    }
+    .modal h2{
+      margin:0 0 5px;font:600 32px/1 "Cormorant Garamond",serif
+    }
+    .modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+    .letter{
+      background:#f2e0bc;
+      border:1px solid rgba(92,65,36,.25);
+      padding:28px 30px;box-shadow:inset 0 0 35px rgba(107,77,38,.08);
+      font-size:15px;line-height:2;white-space:pre-line;
+    }
+    .field{margin:14px 0}
+    label{display:block;font-size:12px;font-weight:700;margin-bottom:7px}
+    input,textarea,select{
+      width:100%;font:inherit;color:var(--ink);
+      background:#fff9eb;border:1px solid rgba(75,56,39,.35);
+      padding:10px 11px;outline:none;
+    }
+    textarea{min-height:105px;resize:vertical}
+    input:focus,textarea:focus,select:focus{border-color:#866448;box-shadow:0 0 0 2px rgba(134,100,72,.1)}
+    .type-choice{display:flex;gap:8px}
+    .type-choice button{flex:1;padding:11px}
+    .type-choice button.selected{background:#d8c19a;border-color:#6b4b36;font-weight:700}
+    .search-wrap{position:relative}
+    .suggestions{
+      position:absolute;left:0;right:0;top:100%;z-index:5;
+      background:#fff9eb;border:1px solid rgba(75,56,39,.3);
+      box-shadow:var(--shadow);max-height:190px;overflow:auto;
+    }
+    .suggestion{padding:9px 11px;border-bottom:1px solid rgba(75,56,39,.12);cursor:pointer;font-size:12px}
+    .suggestion:hover{background:#f1e0bd}
+    .selected-place{
+      padding:9px 11px;background:#ead8b4;font-size:12px;margin-top:6px;
+      display:none;
+    }
+    .photo-preview{
+      margin-top:8px;min-height:150px;
+      display:flex;align-items:center;justify-content:center;
+      border:1px dashed rgba(75,56,39,.4);background:#e9d5ad;
+      overflow:hidden;
+    }
+    .photo-preview img{max-width:100%;max-height:250px;object-fit:contain}
+    .polaroid{
+      background:#fffaf0;padding:10px 10px 30px;box-shadow:0 5px 14px rgba(0,0,0,.16);
+      transform:rotate(-1deg);max-width:90%;
+    }
+    .polaroid img{display:block;width:100%;max-height:230px;object-fit:cover}
+    .hint{font-size:11px;color:#866c51;margin-top:5px}
+    .counter{float:right;font-weight:400;color:#8a7259}
+    .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+    .primary{background:#5a402d;color:#fff8e8;border-color:#5a402d;padding:10px 17px}
+    .secondary{padding:10px 17px}
+    .danger{background:#ead0c9;border-color:#9c5549}
+    .login-user{
+      display:flex;gap:8px;margin:15px 0
+    }
+    .login-user button{flex:1;padding:12px}
+    .login-user button.selected{background:#d8c19a;font-weight:700}
+    .login-note{font-size:11px;color:#866c51;line-height:1.5}
+    .toast{
+      position:fixed;left:50%;bottom:25px;transform:translateX(-50%);
+      z-index:200;background:#4b3827;color:#fff9eb;padding:10px 16px;
+      box-shadow:var(--shadow);font-size:12px;display:none
+    }
+    .toast.show{display:block}
+    @media(max-width:800px){
+      .topbar{top:12px;left:14px;right:14px}
+      .brand h1{font-size:44px}
+      .eyebrow{font-size:10px}
+      .subtitle{font-size:12px}
+      .actions{gap:5px}
+      .action-btn{min-width:0;padding:9px 10px;font-size:12px}
+      .legend{left:12px;bottom:12px;font-size:11px}
+      .status{right:10px;bottom:10px}
+      .modal{padding:20px}
+      .letter{padding:20px;font-size:13px}
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div class="map-vignette"></div>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="eyebrow">A LITTLE ATLAS OF US</div>
+      <h1>Our Little World</h1>
+      <div class="subtitle">서경 &amp; 문혁</div>
+    </div>
+    <div class="actions">
+      <button class="action-btn" id="letterBtn">💌 편지 읽기</button>
+      <button class="action-btn" id="addPinBtn">📌 핀 추가하기</button>
+      <button class="action-btn" id="logoutBtn" style="display:none">나가기</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-row"><span class="dot red"></span> 함께 다녀온 곳</div>
+    <div class="legend-row"><span class="dot white"></span> 함께 가고 싶은 곳</div>
+  </div>
+
+  <div class="status" id="status">지도 불러오는 중…</div>
+  <div class="toast" id="toast"></div>
+
+  <!-- Letter -->
+  <div class="modal-backdrop" id="letterModal">
+    <div class="modal">
+      <button class="close" data-close="letterModal">×</button>
+      <h2>To. 문혁에게</h2>
+      <div class="modal-sub">our little world</div>
+      <div class="letter">우리가 함께 다녀온 곳도,
+아직 함께 가보지 못한 곳도
+하나씩 지도 위에 남겨두고 싶었어.
+
+좋았던 순간은 오래 기억하고,
+다음에 같이 가고 싶은 곳은
+조금씩 늘려가면서.
+
+이 지도에 우리가 지나온 길과
+앞으로 걸어갈 길이 계속 쌓였으면 좋겠다.
+
+생일 축하해. 🎂
+우리의 작은 세계가 앞으로도 계속 이어지길.
+
+서경이가</div>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div class="modal-backdrop" id="loginModal">
+    <div class="modal small">
+      <h2>Our Little World</h2>
+      <div class="modal-sub">누구의 기록을 남길까요?</div>
+      <div class="login-user">
+        <button data-user="seokyung">서경</button>
+        <button data-user="moonhyuk">문혁</button>
+      </div>
+      <div class="field">
+        <label for="pinInput">PIN</label>
+        <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="4자리 PIN">
+      </div>
+      <div class="login-note">
+        이 PIN은 사이트에 들어가기 위한 간단한 잠금장치입니다.
+        GitHub Pages에 공개된 사이트에서 고도의 보안이 필요한 정보는 저장하지 마세요.
+      </div>
+      <div class="modal-footer">
+        <button class="primary" id="loginSubmit">들어가기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pin editor -->
+  <div class="modal-backdrop" id="editorModal">
+    <div class="modal">
+      <button class="close" data-close="editorModal">×</button>
+      <h2 id="editorTitle">핀 추가하기</h2>
+      <div class="modal-sub" id="editorSubtitle">지도에 우리의 장소를 남겨보세요.</div>
+
+      <div id="newPinFields">
+        <div class="field">
+          <label>어떤 곳인가요?</label>
+          <div class="type-choice">
+            <button type="button" data-type="visited">🔴 함께 다녀온 곳</button>
+            <button type="button" data-type="wishlist">⚪ 함께 가고 싶은 곳</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>장소</label>
+          <div class="search-wrap">
+            <input id="placeSearch" autocomplete="off" placeholder="도시나 나라를 검색해 주세요">
+            <div class="suggestions" id="suggestions"></div>
+          </div>
+          <div class="selected-place" id="selectedPlace"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>사진 <span class="hint">(핀 하나당 사진 한 장 · 새 사진을 올리면 기존 사진이 교체됩니다)</span></label>
+        <input id="photoInput" type="file" accept="image/*">
+        <div class="photo-preview" id="photoPreview">사진을 선택해 주세요</div>
+      </div>
+
+      <div class="field">
+        <label>
+          <span id="commentLabel">내 기록</span>
+          <span class="counter" id="counter">0 / 80</span>
+        </label>
+        <textarea id="commentInput" maxlength="80" placeholder="60~80자로 남겨주세요."></textarea>
+        <div class="hint">60~80자(공백 포함)</div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="secondary" data-close="editorModal">취소</button>
+        <button class="primary" id="savePinBtn">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+       1) 여기 두 값만 본인의 Supabase 값으로 바꾸세요.
+       Supabase Dashboard → Project Settings → API에서 확인합니다.
+       service_role key는 절대 넣지 마세요. anon/public key만 사용하세요.
+       ========================================================= */
+    const SUPABASE_URL = "YOUR_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    const BUCKET = "photos";
+
+    const USERS = {
+      seokyung: { name: "서경", pin: "0614", field: "seokyung_comment" },
+      moonhyuk: { name: "문혁", pin: "0922", field: "moonhyuk_comment" }
+    };
+
+    const supabaseClient =
+      window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let selectedType = "visited";
+    let selectedPlace = null;
+    let editingPin = null;
+    let previewObjectUrl = null;
+    let map;
+    const markers = new Map();
+
+    const $ = id => document.getElementById(id);
+
+    function showToast(message) {
+      const el = $("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    function openModal(id) {
+      $(id).classList.add("open");
+    }
+
+    function closeModal(id) {
+      $(id).classList.remove("open");
+    }
+
+    document.querySelectorAll("[data-close]").forEach(btn => {
+      btn.addEventListener("click", () => closeModal(btn.dataset.close));
+    });
+
+    $("letterBtn").addEventListener("click", () => openModal("letterModal"));
+
+    function refreshLoginUI() {
+      $("logoutBtn").style.display = currentUser ? "block" : "none";
+    }
+
+    function ensureLogin() {
+      if (!currentUser) {
+        openModal("loginModal");
+        return false;
+      }
+      return true;
+    }
+
+    // Simple PIN login. This is a UI lock, not high-security authentication.
+    document.querySelectorAll(".login-user button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".login-user button").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        $("pinInput").dataset.user = btn.dataset.user;
+        $("pinInput").focus();
+      });
+    });
+
+    $("loginSubmit").addEventListener("click", () => {
+      const userKey = $("pinInput").dataset.user;
+      const pin = $("pinInput").value.trim();
+
+      if (!userKey) {
+        showToast("서경 또는 문혁을 먼저 선택해 주세요.");
+        return;
+      }
+      if (USERS[userKey].pin !== pin) {
+        showToast("PIN이 맞지 않습니다.");
+        return;
+      }
+
+      currentUser = userKey;
+      localStorage.setItem("our_world_user", currentUser);
+      closeModal("loginModal");
+      refreshLoginUI();
+      showToast(`${USERS[currentUser].name}으로 로그인했어요.`);
+    });
+
+    $("logoutBtn").addEventListener("click", () => {
+      currentUser = null;
+      localStorage.removeItem("our_world_user");
+      refreshLoginUI();
+      showToast("로그아웃했어요.");
+    });
+
+    function restoreLogin() {
+      const saved = localStorage.getItem("our_world_user");
+      if (saved && USERS[saved]) currentUser = saved;
+      refreshLoginUI();
+    }
+
+    function makeIcon(type) {
+      const klass = type === "visited" ? "pin-red" : "pin-white";
+      return L.divIcon({
+        className: "",
+        html: `<div class="pin-icon ${klass}"><span></span></div>`,
+        iconSize: [24,24],
+        iconAnchor: [12,24],
+        popupAnchor: [0,-20]
+      });
+    }
+
+    function publicPhotoUrl(path) {
+      if (!path) return null;
+      const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function popupHtml(pin) {
+      const photo = publicPhotoUrl(pin.image_path);
+      const typeLabel = pin.type === "visited" ? "함께 다녀온 곳" : "함께 가고 싶은 곳";
+
+      let html = `
+        <div class="popup-title">${escapeHtml(pin.name)}</div>
+        <div class="popup-type">${pin.type === "visited" ? "🔴" : "⚪"} ${typeLabel}</div>
+      `;
+
+      if (photo) {
+        html += `<img class="popup-photo" src="${photo}" alt="">`;
+      }
+
+      const people = [
+        ["seokyung", "서경", pin.seokyung_comment],
+        ["moonhyuk", "문혁", pin.moonhyuk_comment]
+      ];
+
+      for (const [key, name, comment] of people) {
+        html += `<div class="comment">
+          <div class="comment-name">${name}</div>
+          ${comment ? `<div>${escapeHtml(comment)}</div>` : `<div class="empty-comment">아직 기록이 없어요.</div>`}
+        `;
+
+        if (currentUser === key) {
+          html += `<div class="popup-actions">
+            <button class="mini-btn" onclick="editMyComment(${pin.id})">내 기록 수정</button>
+            ${comment ? `<button class="mini-btn danger" onclick="deleteMyComment(${pin.id})">내 기록 삭제</button>` : ""}
+          </div>`;
+        }
+
+        html += `</div>`;
+      }
+
+      html += `<div class="popup-actions">
+        <button class="mini-btn" onclick="openPhotoEditor(${pin.id})">📷 사진 ${photo ? "교체" : "업로드"}</button>
+      </div>`;
+
+      return html;
+    }
+
+    async function loadPins() {
+      $("status").textContent = "지도 불러오는 중…";
+
+      const { data, error } = await supabaseClient
+        .from("pins")
+        .select("id,type,name,lat,lon,image_path,seokyung_comment,moonhyuk_comment")
+        .order("id", { ascending: true });
+
+      if (error) {
+        console.error(error);
+        $("status").textContent = "Supabase 연결 확인 필요";
+        showToast("핀을 불러오지 못했어요. Supabase 설정을 확인해 주세요.");
+        return;
+      }
+
+      markers.forEach(m => map.removeLayer(m));
+      markers.clear();
+
+      (data || []).forEach(pin => {
+        if (pin.lat == null || pin.lon == null) return;
+
+        const marker = L.marker([Number(pin.lat), Number(pin.lon)], {
+          icon: makeIcon(pin.type)
+        }).addTo(map);
+
+        marker.bindPopup(popupHtml(pin), { closeButton: true });
+        markers.set(pin.id, marker);
+      });
+
+      $("status").textContent = `${data?.length || 0}개의 장소`;
+    }
+
+    function resetEditor() {
+      editingPin = null;
+      selectedPlace = null;
+      selectedType = "visited";
+      $("editorTitle").textContent = "핀 추가하기";
+      $("editorSubtitle").textContent = "지도에 우리의 장소를 남겨보세요.";
+      $("newPinFields").style.display = "block";
+      $("placeSearch").value = "";
+      $("selectedPlace").style.display = "none";
+      $("selectedPlace").textContent = "";
+      $("commentInput").value = "";
+      $("photoInput").value = "";
+      $("photoPreview").textContent = "사진을 선택해 주세요";
+      $("photoPreview").innerHTML = "사진을 선택해 주세요";
+      $("counter").textContent = "0 / 80";
+      document.querySelectorAll(".type-choice button").forEach(b => b.classList.remove("selected"));
+      document.querySelector('.type-choice button[data-type="visited"]').classList.add("selected");
+      if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = null;
+    }
+
+    function openNewPinEditor() {
+      if (!ensureLogin()) return;
+      resetEditor();
+      openModal("editorModal");
+    }
+
+    $("addPinBtn").addEventListener("click", openNewPinEditor);
+
+    document.querySelectorAll(".type-choice button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectedType = btn.dataset.type;
+        document.querySelectorAll(".type-choice button").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      });
+    });
+
+    let searchTimer;
+    $("placeSearch").addEventListener("input", () => {
+      const q = $("placeSearch").value.trim();
+      selectedPlace = null;
+      $("selectedPlace").style.display = "none";
+      clearTimeout(searchTimer);
+      if (q.length < 2) {
+        $("suggestions").innerHTML = "";
+        return;
+      }
+      searchTimer = setTimeout(() => searchPlaces(q), 450);
+    });
+
+    async function searchPlaces(q) {
+      const box = $("suggestions");
+      box.innerHTML = `<div class="suggestion">검색 중…</div>`;
+
+      try {
+        const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&q=" + encodeURIComponent(q);
+        const res = await fetch(url, { headers: { "Accept-Language": "ko,en" } });
+        if (!res.ok) throw new Error("search failed");
+        const results = await res.json();
+
+        box.innerHTML = "";
+        if (!results.length) {
+          box.innerHTML = `<div class="suggestion">검색 결과가 없어요.</div>`;
+          return;
+        }
+
+        results.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "suggestion";
+          div.textContent = item.display_name;
+          div.addEventListener("click", () => {
+            selectedPlace = {
+              display_name: item.display_name,
+              lat: Number(item.lat),
+              lon: Number(item.lon)
+            };
+            $("placeSearch").value = item.display_name;
+            $("selectedPlace").textContent = "✓ " + item.display_name;
+            $("selectedPlace").style.display = "block";
+            box.innerHTML = "";
+          });
+          box.appendChild(div);
+        });
+      } catch (e) {
+        console.error(e);
+        box.innerHTML = `<div class="suggestion">장소 검색에 실패했어요.</div>`;
+      }
+    }
+
+    $("photoInput").addEventListener("change", () => {
+      const file = $("photoInput").files[0];
+      const preview = $("photoPreview");
+
+      if (!file) {
+        preview.innerHTML = "사진을 선택해 주세요";
+        return;
+      }
+
+      if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = URL.createObjectURL(file);
+      preview.innerHTML = `<div class="polaroid"><img src="${previewObjectUrl}" alt=""></div>`;
+    });
+
+    $("commentInput").addEventListener("input", () => {
+      $("counter").textContent = `${$("commentInput").value.length} / 80`;
+    });
+
+    function openCommentEditor(pin) {
+      if (!ensureLogin()) return;
+
+      editingPin = pin;
+      $("editorTitle").textContent = "내 기록 수정";
+      $("editorSubtitle").textContent = `${USERS[currentUser].name}의 기록만 수정합니다.`;
+      $("newPinFields").style.display = "none";
+      $("commentInput").value = pin[USERS[currentUser].field] || "";
+      $("counter").textContent = `${$("commentInput").value.length} / 80`;
+      $("photoInput").value = "";
+      $("photoPreview").innerHTML = pin.image_path
+        ? `<div class="hint">현재 사진이 있습니다. 새 사진을 선택하면 교체됩니다.</div>`
+        : "현재 사진이 없습니다.";
+      openModal("editorModal");
+    }
+
+    async function getPin(pinId) {
+      const { data, error } = await supabaseClient
+        .from("pins")
+        .select("id,type,name,lat,lon,image_path,seokyung_comment,moonhyuk_comment")
+        .eq("id", pinId)
+        .single();
+      if (error) {
+        showToast("핀 정보를 불러오지 못했어요.");
+        return null;
+      }
+      return data;
+    }
+
+    window.editMyComment = async function(pinId) {
+      const pin = await getPin(pinId);
+      if (pin) openCommentEditor(pin);
+    };
+
+    window.deleteMyComment = async function(pinId) {
+      if (!ensureLogin()) return;
+      if (!confirm("내 기록을 삭제할까요?")) return;
+
+      const payload = {};
+      payload[USERS[currentUser].field] = null;
+
+      const { error } = await supabaseClient
+        .from("pins")
+        .update(payload)
+        .eq("id", pinId);
+
+      if (error) {
+        console.error(error);
+        showToast("기록 삭제에 실패했어요.");
+        return;
+      }
+
+      await loadPins();
+      showToast("내 기록을 삭제했어요.");
+    };
+
+    window.openPhotoEditor = async function(pinId) {
+      if (!ensureLogin()) return;
+      const pin = await getPin(pinId);
+      if (!pin) return;
+      editingPin = pin;
+      $("editorTitle").textContent = "사진 업로드 / 교체";
+      $("editorSubtitle").textContent = "이 핀에는 사진 한 장만 유지됩니다.";
+      $("newPinFields").style.display = "none";
+      $("commentInput").value = "";
+      $("commentInput").disabled = true;
+      $("photoInput").value = "";
+      $("photoPreview").innerHTML = pin.image_path
+        ? `<div class="hint">현재 사진이 있습니다. 새 사진을 선택하면 기존 사진이 교체됩니다.</div>`
+        : "현재 사진이 없습니다.";
+      openModal("editorModal");
+    };
+
+    async function compressToJpeg(file) {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      try {
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = url;
+        });
+
+        const max = 1800;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        return await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", .88));
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    async function replacePhoto(pinId, file) {
+      const blob = await compressToJpeg(file);
+      const path = `pins/${pinId}.jpg`;
+
+      const { error } = await supabaseClient.storage
+        .from(BUCKET)
+        .upload(path, blob, {
+          upsert: true,
+          contentType: "image/jpeg",
+          cacheControl: "3600"
+        });
+
+      if (error) throw error;
+
+      const { error: dbError } = await supabaseClient
+        .from("pins")
+        .update({ image_path: path })
+        .eq("id", pinId);
+
+      if (dbError) throw dbError;
+    }
+
+    async function saveNewPin(comment, file) {
+      if (!selectedPlace) {
+        showToast("장소를 먼저 선택해 주세요.");
+        return;
+      }
+
+      const { data: pin, error } = await supabaseClient
+        .from("pins")
+        .insert({
+          type: selectedType,
+          name: selectedPlace.display_name,
+          lat: selectedPlace.lat,
+          lon: selectedPlace.lon,
+          image_path: null,
+          seokyung_comment: null,
+          moonhyuk_comment: null
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      const payload = {};
+      payload[USERS[currentUser].field] = comment;
+
+      const { error: commentError } = await supabaseClient
+        .from("pins")
+        .update(payload)
+        .eq("id", pin.id);
+
+      if (commentError) throw commentError;
+
+      if (file) await replacePhoto(pin.id, file);
+    }
+
+    async function saveExistingPin(pin, comment, file) {
+      if (comment !== null) {
+        const payload = {};
+        payload[USERS[currentUser].field] = comment;
+
+        const { error } = await supabaseClient
+          .from("pins")
+          .update(payload)
+          .eq("id", pin.id);
+
+        if (error) throw error;
+      }
+
+      if (file) await replacePhoto(pin.id, file);
+    }
+
+    $("savePinBtn").addEventListener("click", async () => {
+      if (!ensureLogin()) return;
+
+      const comment = $("commentInput").value.trim();
+      const file = $("photoInput").files[0] || null;
+
+      // Photo-only editor
+      if (editingPin && $("commentInput").disabled) {
+        if (!file) {
+          showToast("교체할 사진을 선택해 주세요.");
+          return;
+        }
+        try {
+          $("savePinBtn").disabled = true;
+          await replacePhoto(editingPin.id, file);
+          closeModal("editorModal");
+          $("commentInput").disabled = false;
+          await loadPins();
+          showToast("사진을 교체했어요.");
+        } catch (e) {
+          console.error(e);
+          showToast("사진 저장에 실패했어요.");
+        } finally {
+          $("savePinBtn").disabled = false;
+        }
+        return;
+      }
+
+      if (comment.length < 60 || comment.length > 80) {
+        showToast("기록은 공백 포함 60~80자로 작성해 주세요.");
+        return;
+      }
+
+      try {
+        $("savePinBtn").disabled = true;
+
+        if (!editingPin) {
+          await saveNewPin(comment, file);
+          showToast("새 핀을 저장했어요.");
+        } else {
+          await saveExistingPin(editingPin, comment, file);
+          showToast("내 기록을 저장했어요.");
+        }
+
+        closeModal("editorModal");
+        $("commentInput").disabled = false;
+        await loadPins();
+      } catch (e) {
+        console.error(e);
+        showToast("저장에 실패했어요. Supabase 권한과 테이블 구조를 확인해 주세요.");
+      } finally {
+        $("savePinBtn").disabled = false;
+      }
+    });
+
+    function initMap() {
+      map = L.map("map", {
+        minZoom: 2,
+        maxZoom: 7,
+        worldCopyJump: true,
+        zoomControl: true
+      }).setView([35, 25], 3);
+
+      // GitHub Pages / local preview에서 OSM 기본 타일이 403으로 막히는 문제를 피하기 위해 CARTO 사용
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        subdomains: "abcd",
+        maxZoom: 20
+      }).addTo(map);
+    }
+
+    // Reset modal state when opening/closing
+    $("editorModal").addEventListener("click", e => {
+      if (e.target === $("editorModal")) closeModal("editorModal");
+    });
+
+    $("letterModal").addEventListener("click", e => {
+      if (e.target === $("letterModal")) closeModal("letterModal");
+    });
+
+    // On opening comment editor, photo preview state should be restored.
+    $("editorModal").addEventListener("transitionend", () => {});
+
+    async function boot() {
+      restoreLogin();
+      initMap();
+
+      if (SUPABASE_URL.includes("YOUR_") || SUPABASE_ANON_KEY.includes("YOUR_")) {
+        $("status").textContent = "Supabase 설정 필요";
+        showToast("index.html 안의 Supabase URL과 anon key를 넣어 주세요.");
+        return;
+      }
+
+      await loadPins();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
