@@ -215,6 +215,12 @@
       box-shadow:var(--shadow);font-size:12px;display:none
     }
     .toast.show{display:block}
+    .status{appearance:none;cursor:pointer;font:inherit;}
+    .status:hover{background:rgba(247,236,210,.95);}
+    .pin-list-actions{display:flex;flex-direction:column;gap:6px;align-items:stretch;}
+    .pin-list-action{border:1px solid rgba(75,56,39,.25);background:rgba(255,255,255,.28);color:#4b3827;padding:6px 9px;font-family:"Gowun Batang",serif;font-size:11px;cursor:pointer;white-space:nowrap;}
+    .pin-list-action:hover{background:rgba(255,255,255,.65);}
+    .pin-list-action.delete{color:#8d3e35;border-color:rgba(141,62,53,.3);}
     @media(max-width:800px){
       .topbar{top:12px;left:14px;right:14px}
       .brand h1{font-size:44px}
@@ -476,9 +482,8 @@
     font-size: 19px;
   }
 
-  .pin-list-go {
-    display: none;
-  }
+  .pin-list-go { display: none; }
+  .pin-list-actions { grid-column: 2; flex-direction:row; justify-content:flex-start; }
 }
   </style>
 </head>
@@ -496,7 +501,6 @@
     <div class="actions">
       <button class="action-btn" id="letterBtn">💌 편지 읽기</button>
       <button class="action-btn" id="addPinBtn">📌 핀 추가하기</button>
-      <button class="map-button" id="openPinListBtn">📍 핀 모아보기</button>
       <button class="action-btn" id="logoutBtn" style="display:none">나가기</button>
     </div>
   </div>
@@ -506,7 +510,7 @@
     <div class="legend-row"><span class="dot white"></span> 함께 가고 싶은 곳</div>
   </div>
 
-  <div class="status" id="status">지도 불러오는 중…</div>
+  <button type="button" class="status" id="status">지도 불러오는 중…</button>
   <div class="toast" id="toast"></div>
 
   <!-- Letter -->
@@ -611,24 +615,8 @@ p.s. 그래도 생일인데 뭔가 재미있는 게 없을까 생각하다가 �
 
     <div class="pin-list-header">
       <div class="eyebrow">OUR LITTLE WORLD</div>
-      <h2>핀 모아보기</h2>
+      <h2>우리의 장소</h2>
       <p>우리가 지나온 곳, 그리고 함께 가고 싶은 곳</p>
-    </div>
-
-    <div class="pin-filter">
-      <button class="pin-filter-btn active" data-filter="all">
-        전체
-      </button>
-
-      <button class="pin-filter-btn" data-filter="visited">
-        <span class="filter-dot red"></span>
-        다녀온 곳
-      </button>
-
-      <button class="pin-filter-btn" data-filter="wishlist">
-        <span class="filter-dot white"></span>
-        가고 싶은 곳
-      </button>
     </div>
 
     <div class="pin-list-count" id="pinListCount"></div>
@@ -665,257 +653,109 @@ p.s. 그래도 생일인데 뭔가 재미있는 게 없을까 생각하다가 �
 ========================= */
 
 const pinListModal = document.getElementById("pinListModal");
-const openPinListBtn = document.getElementById("openPinListBtn");
+const statusBtn = document.getElementById("status");
 const closePinListBtn = document.getElementById("closePinListBtn");
 const pinList = document.getElementById("pinList");
 const pinListCount = document.getElementById("pinListCount");
-
 let allPinListData = [];
-let currentPinFilter = "all";
-
 
 function escapePinListHTML(value) {
   if (value === null || value === undefined) return "";
-
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-
 async function loadPinList() {
-
-  pinList.innerHTML = `
-    <div class="pin-list-loading">
-      지도를 펼쳐보는 중...
-    </div>
-  `;
-
+  pinList.innerHTML = `<div class="pin-list-loading">장소 목록을 불러오는 중...</div>`;
   const { data, error } = await supabaseClient
     .from("pins")
-    .select(`
-      id,
-      type,
-      name,
-      lat,
-      lon,
-      image_path,
-      seokyung_comment,
-      moonhyuk_comment
-    `)
+    .select("id,type,name,lat,lon,image_path,seokyung_comment,moonhyuk_comment")
     .order("id", { ascending: true });
-
   if (error) {
-    console.error("핀 목록 불러오기 실패:", error);
-
-    pinList.innerHTML = `
-      <div class="pin-list-empty">
-        핀 목록을 불러오지 못했어요.<br>
-        잠시 후 다시 시도해주세요.
-      </div>
-    `;
-
+    console.error(error);
+    pinList.innerHTML = `<div class="pin-list-empty">장소 목록을 불러오지 못했어요.</div>`;
     return;
   }
-
   allPinListData = data || [];
-
   renderPinList();
 }
 
-
 function renderPinList() {
-
-  let filteredPins = [...allPinListData];
-
-  if (currentPinFilter === "visited") {
-    filteredPins = filteredPins.filter(pin => pin.type === "visited");
-  }
-
-  if (currentPinFilter === "wishlist") {
-    filteredPins = filteredPins.filter(pin => pin.type === "wishlist");
-  }
-
-  pinListCount.textContent =
-    `${filteredPins.length}개의 장소`;
-
-  if (!filteredPins.length) {
-    pinList.innerHTML = `
-      <div class="pin-list-empty">
-        아직 이곳에 남겨진 핀이 없어요.
-      </div>
-    `;
+  pinListCount.textContent = `${allPinListData.length}개의 장소`;
+  if (!allPinListData.length) {
+    pinList.innerHTML = `<div class="pin-list-empty">아직 등록된 장소가 없어요.</div>`;
     return;
   }
-
-  pinList.innerHTML = filteredPins.map(pin => {
-
+  pinList.innerHTML = allPinListData.map(pin => {
     const isVisited = pin.type === "visited";
-
-    const typeLabel = isVisited
-      ? "함께 다녀온 곳"
-      : "함께 가고 싶은 곳";
-
-    let photoHTML = `
-      <div class="pin-list-photo-empty">📍</div>
-    `;
-
+    const typeLabel = isVisited ? "함께 다녀온 곳" : "함께 가고 싶은 곳";
+    let photoHTML = `<div class="pin-list-photo-empty">📍</div>`;
     if (pin.image_path) {
-
-      const { data: publicUrlData } =
-        supabaseClient.storage
-          .from(BUCKET)
-          .getPublicUrl(pin.image_path);
-
-      if (publicUrlData?.publicUrl) {
-        photoHTML = `
-          <img
-            class="pin-list-photo"
-            src="${publicUrlData.publicUrl}"
-            alt=""
-            loading="lazy"
-          >
-        `;
-      }
+      const { data: publicUrlData } = supabaseClient.storage.from(BUCKET).getPublicUrl(pin.image_path);
+      if (publicUrlData?.publicUrl) photoHTML = `<img class="pin-list-photo" src="${publicUrlData.publicUrl}" alt="" loading="lazy">`;
     }
-
     const comments = [];
-
-    if (pin.seokyung_comment) {
-      comments.push(`
-        <div class="pin-list-comment">
-          <strong>서경</strong> ·
-          ${escapePinListHTML(pin.seokyung_comment)}
-        </div>
-      `);
-    }
-
-    if (pin.moonhyuk_comment) {
-      comments.push(`
-        <div class="pin-list-comment">
-          <strong>문혁</strong> ·
-          ${escapePinListHTML(pin.moonhyuk_comment)}
-        </div>
-      `);
-    }
-
-    const commentHTML = comments.length
-      ? comments.join("")
-      : `<div class="pin-list-comment">아직 남겨진 이야기가 없어요.</div>`;
-
-    return `
-      <div
-        class="pin-list-item"
-        data-pin-id="${pin.id}"
-        data-lat="${pin.lat}"
-        data-lon="${pin.lon}"
-      >
-
-        ${photoHTML}
-
-        <div class="pin-list-info">
-
-          <div class="pin-list-type">
-            <span class="pin-list-type-dot ${isVisited ? "visited" : "wishlist"}"></span>
-            ${typeLabel}
-          </div>
-
-          <div class="pin-list-name">
-            ${escapePinListHTML(pin.name)}
-          </div>
-
-          <div class="pin-list-comments">
-            ${commentHTML}
-          </div>
-
-        </div>
-
-        <div class="pin-list-go">
-          지도에서 보기 →
-        </div>
-
+    if (pin.seokyung_comment) comments.push(`<div class="pin-list-comment"><strong>서경</strong> · ${escapePinListHTML(pin.seokyung_comment)}</div>`);
+    if (pin.moonhyuk_comment) comments.push(`<div class="pin-list-comment"><strong>문혁</strong> · ${escapePinListHTML(pin.moonhyuk_comment)}</div>`);
+    const commentHTML = comments.length ? comments.join("") : `<div class="pin-list-comment">아직 남겨진 이야기가 없어요.</div>`;
+    return `<div class="pin-list-item" data-pin-id="${pin.id}">
+      ${photoHTML}
+      <div class="pin-list-info">
+        <div class="pin-list-type"><span class="pin-list-type-dot ${isVisited ? "visited" : "wishlist"}"></span>${typeLabel}</div>
+        <div class="pin-list-name">${escapePinListHTML(pin.name)}</div>
+        <div class="pin-list-comments">${commentHTML}</div>
       </div>
-    `;
-
+      <div class="pin-list-actions">
+        <button type="button" class="pin-list-action edit" data-action="edit" data-pin-id="${pin.id}">수정</button>
+        <button type="button" class="pin-list-action delete" data-action="delete" data-pin-id="${pin.id}">삭제</button>
+      </div>
+    </div>`;
   }).join("");
 
-
-  /* 목록 클릭 → 해당 위치로 지도 이동 */
-
-  document.querySelectorAll(".pin-list-item").forEach(item => {
-
-    item.addEventListener("click", () => {
-
-      const lat = Number(item.dataset.lat);
-      const lon = Number(item.dataset.lon);
-
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+  pinList.querySelectorAll(".pin-list-item").forEach(item => {
+    item.addEventListener("click", async event => {
+      const action = event.target.closest("button[data-action]")?.dataset.action;
+      const pinId = Number(item.dataset.pinId);
+      if (!Number.isFinite(pinId)) return;
+      if (action === "delete") {
+        event.stopPropagation();
+        await deletePinFromList(pinId);
         return;
       }
-
+      const pin = await getPin(pinId);
+      if (!pin) return;
       pinListModal.classList.remove("open");
-
-      map.setView([lat, lon], Math.max(map.getZoom(), 5), {
-        animate: true
-      });
-
+      openCommentAndPhotoEditor(pin);
     });
-
   });
 }
 
-
-/* 열기 */
-
-openPinListBtn.addEventListener("click", async () => {
-
+statusBtn.addEventListener("click", async () => {
   pinListModal.classList.add("open");
-
   await loadPinList();
-
 });
 
-
-/* 닫기 */
-
-closePinListBtn.addEventListener("click", () => {
-  pinListModal.classList.remove("open");
+closePinListBtn.addEventListener("click", () => pinListModal.classList.remove("open"));
+pinListModal.addEventListener("click", event => {
+  if (event.target === pinListModal) pinListModal.classList.remove("open");
 });
 
+async function deletePinFromList(pinId) {
+  if (!ensureLogin()) return;
+  const pin = await getPin(pinId);
+  if (!pin) return;
+  if (!confirm(`"${pin.name}" 장소를 삭제할까요?\n장소와 두 사람의 기록이 모두 삭제됩니다.`)) return;
 
-/* 바깥쪽 클릭 */
-
-pinListModal.addEventListener("click", (event) => {
-
-  if (event.target === pinListModal) {
-    pinListModal.classList.remove("open");
+  const { error } = await supabaseClient.from("pins").delete().eq("id", pinId);
+  if (error) {
+    console.error(error);
+    showToast("장소 삭제에 실패했어요.");
+    return;
   }
+  await loadPins();
+  await loadPinList();
+  showToast("장소를 삭제했어요.");
+}
 
-});
-
-
-/* 필터 */
-
-document.querySelectorAll(".pin-filter-btn").forEach(button => {
-
-  button.addEventListener("click", () => {
-
-    document
-      .querySelectorAll(".pin-filter-btn")
-      .forEach(btn => btn.classList.remove("active"));
-
-    button.classList.add("active");
-
-    currentPinFilter = button.dataset.filter;
-
-    renderPinList();
-
-  });
-
-});
     let currentUser = null;
     let selectedType = "visited";
     let selectedPlace = null;
@@ -1225,6 +1065,22 @@ document.querySelectorAll(".pin-filter-btn").forEach(button => {
       openModal("editorModal");
     }
 
+    function openCommentAndPhotoEditor(pin) {
+      if (!ensureLogin()) return;
+      editingPin = pin;
+      $("editorTitle").textContent = "장소 수정";
+      $("editorSubtitle").textContent = `${USERS[currentUser].name}의 코멘트와 사진을 수정할 수 있어요.`;
+      $("newPinFields").style.display = "none";
+      $("commentInput").disabled = false;
+      $("commentInput").value = pin[USERS[currentUser].field] || "";
+      $("counter").textContent = `${$("commentInput").value.length} / 80`;
+      $("photoInput").value = "";
+      $("photoPreview").innerHTML = pin.image_path
+        ? `<div class="hint">현재 사진이 있습니다. 새 사진을 선택하면 교체됩니다.</div>`
+        : "현재 사진이 없습니다.";
+      openModal("editorModal");
+    }
+
     async function getPin(pinId) {
       const { data, error } = await supabaseClient
         .from("pins")
@@ -1409,7 +1265,16 @@ document.querySelectorAll(".pin-filter-btn").forEach(button => {
         return;
       }
 
-      if (comment.length < 60 || comment.length > 80) {
+      if (editingPin) {
+        if (!comment && !file) {
+          showToast("수정할 코멘트나 사진을 선택해 주세요.");
+          return;
+        }
+        if (comment && (comment.length < 60 || comment.length > 80)) {
+          showToast("기록은 공백 포함 60~80자로 작성해 주세요.");
+          return;
+        }
+      } else if (comment.length < 60 || comment.length > 80) {
         showToast("기록은 공백 포함 60~80자로 작성해 주세요.");
         return;
       }
@@ -1421,7 +1286,7 @@ document.querySelectorAll(".pin-filter-btn").forEach(button => {
           await saveNewPin(comment, file);
           showToast("새 핀을 저장했어요.");
         } else {
-          await saveExistingPin(editingPin, comment, file);
+          await saveExistingPin(editingPin, comment || null, file);
           showToast("내 기록을 저장했어요.");
         }
 
